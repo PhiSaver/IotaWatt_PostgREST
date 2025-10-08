@@ -1,7 +1,7 @@
+# Variables
+DOCKER = podman
+
 help:			
-	@echo "==================================="
-	@echo "  Django Project Makefile Commands "
-	@echo "==================================="
 	@awk -F':|##' ' \
 		/^## / { \
 			heading=substr($$0,4); \
@@ -19,19 +19,19 @@ help:
 
 ## Docker Commands
 docker_prune: ## Prune unused Docker resources
-	docker system prune -f
+	$(DOCKER) system prune -f
 
 
 psql_up: ## Start timescale+postgrest 
-	docker compose up --build -d
+	$(DOCKER) compose up --build -d
 
 
 psql_down: ## Stop PostgreSQL container and remove volumes
-	docker compose down -v
+	$(DOCKER) compose down -v
 
 
 psql_terminal: ## Open a terminal in the PostgreSQL container
-	docker exec -it timescale-db psql -U phisaver_user -d phisaver
+	$(DOCKER) exec -it timescale-db psql -U phisaver_user -d phisaver
 
 
 
