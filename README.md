@@ -9,7 +9,6 @@ Note this is a _work in progress_ and although it _works on my machine_, you'll 
 This project provides:
 - **TimescaleDB**: High-performance time-series database for IoT data storage
 - **PostgREST**: Automatic REST API generation from PostgreSQL schema
-- **JWT Authentication**: Secure API access with role-based permissions
 - **Python Utilities**: Data management and JWT token generation tools
 
 ##  Quick Start
@@ -63,7 +62,7 @@ uv run generate_jwt.py generate phisaver 24
 uv run generate_jwt.py generate web_anon --no-expiry
 ```
 
-## 🛠️ Available Commands
+## Available Commands
 
 Use `make help` to see all available commands:
 
@@ -80,9 +79,9 @@ make show_db        # Display current IoTaWatt data
 - **TimescaleDB**: Runs on port 5433 (customizable via `.env`)
 - **PostgREST API**: Runs on port 3001 (customizable via `.env`)
 
-## 🔧 Development
+## Development
 
-This project uses [uv](https://docs.astral.sh/uv/) for fast Python package management:
+Original dev environment is linux, VSCode, UV.
 
 ```bash
 # Install dependencies
