@@ -1,6 +1,8 @@
 # IotaWatt PostgREST
 
-A complete IoT monitoring system that combines IoTaWatt energy monitoring with TimescaleDB and PostgREST for time-series data collection and REST API access.
+A docker container to run a PostgREST -> TimeScaleDB -> Postgres stack for use with IotaWatt. It could be used more generally as there nothing IotaWatt specific. The schema is suited to energy montioring data.
+
+Note this is a _work in progress_ and although it "works on my machine", it's not tested.
 
 ## 🏗️ Architecture
 
