@@ -1,5 +1,6 @@
 # IotaWatt PostgREST
 
+<<<<<<< HEAD
 Works with IoTaWatt energy monitoring, adding uploading to PostgresSQL / TimescaleDB via PostgREST.
 
 ## Architecture
@@ -10,6 +11,20 @@ This project provides:
 - **JWT Utilities**: Secure API access with role-based permissions
 
 ## Quick Start
+=======
+A docker container to run a PostgREST -> TimeScaleDB -> Postgres stack for use with IotaWatt. It could be used more generally as there nothing IotaWatt specific. The schema is suited to energy montioring data.
+
+Note this is a _work in progress_ and although it _works on my machine_, you'll likely need to adapt. Feel free to contact me.
+
+## Architecture
+
+This project provides:
+- **TimescaleDB**: High-performance time-series database for IoT data storage
+- **PostgREST**: Automatic REST API generation from PostgreSQL schema
+- **Python Utilities**: Data management and JWT token generation tools
+
+##  Quick Start
+>>>>>>> e2477bce9c74463ed07afc1c18203b68e1ca1b05
 
 1. **Clone and setup**:
    ```bash
@@ -59,23 +74,36 @@ Generate tokens with different permissions:
 uv run jwt.py generate --role writer iotawatt 
 ```
 
+<<<<<<< HEAD
 ##  Available Commands
+=======
+## Available Commands
+>>>>>>> e2477bce9c74463ed07afc1c18203b68e1ca1b05
 
 Use `make help` to see all infrastructure commands.
 Use `uv run jwt.py --help` to see JWT generation options.
 
 
+<<<<<<< HEAD
 ##  Services
+=======
+## Services
+>>>>>>> e2477bce9c74463ed07afc1c18203b68e1ca1b05
 
 - **TimescaleDB**: Runs on port 5433 (customizable via `.env`)
 - **PostgREST API**: Runs on port 3001 (customizable via `.env`)
-- **Database**: `phisaver` with `iotawatt` hypertable for time-series data
 
+<<<<<<< HEAD
 ## Customization
 
 You can customize most names and settings via the `.env` file.
 
 ## Basic API Queries
+=======
+## Development
+
+Original dev environment is linux, VSCode, UV.
+>>>>>>> e2477bce9c74463ed07afc1c18203b68e1ca1b05
 
 ```bash
 # Get JWT token
@@ -96,6 +124,7 @@ curl -H "Authorization: Bearer $JWT_TOKEN" \
 curl -H "Authorization: Bearer $JWT_TOKEN" \
      "http://localhost:3000/rpc/hourly_averages"
 ```
+<<<<<<< HEAD
 
 ## Data Insertion
 
@@ -115,3 +144,5 @@ curl -X POST \
      }' \
      "http://localhost:3001/iotawatt"
 ```
+=======
+>>>>>>> e2477bce9c74463ed07afc1c18203b68e1ca1b05
