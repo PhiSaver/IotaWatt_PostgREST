@@ -1,16 +1,15 @@
 # IotaWatt PostgREST
 
-A complete IoT monitoring system that combines IoTaWatt energy monitoring with TimescaleDB and PostgREST for time-series data collection and REST API access.
+Works with IoTaWatt energy monitoring, adding uploading to PostgresSQL / TimescaleDB via PostgREST.
 
-## 🏗️ Architecture
+## Architecture
 
 This project provides:
-- **TimescaleDB**: High-performance time-series database for IoT data storage
-- **PostgREST**: Automatic REST API generation from PostgreSQL schema
-- **JWT Authentication**: Secure API access with role-based permissions
-- **Python Utilities**: Data management and JWT token generation tools
+- **TimescaleDB Container**: Time-series database for IoTaWatt data
+- **PostgREST Container**: Automatic REST API generation from PostgreSQL schema
+- **JWT Utilities**: Secure API access with role-based permissions
 
-## 🚀 Quick Start
+## Quick Start
 
 1. **Clone and setup**:
    ```bash
@@ -26,99 +25,93 @@ This project provides:
 
 3. **Start services**:
    ```bash
-   make psql_up
+   make up
    ```
 
 4. **Generate JWT token**:
    ```bash
-   make generate_jwt
+   make jwt
+   export JWT_TOKEN=your_generated_token_here
    ```
 
-See [SETUP.md](SETUP.md) for detailed installation instructions.
-
-## 📊 API Access
+##  API Access
 
 Once running, your IoTaWatt data is available via REST API:
 
 ```bash
-# Get recent data (requires JWT token)
-curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-     "http://localhost:3001/iotawatt?limit=10&order=timestamp.desc"
 
 # Get data for specific device
 curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
      "http://localhost:3001/iotawatt?device=eq.iotawatt-01&limit=50"
 ```
 
-## 🔐 Authentication
+##  Authentication
 
-Two role levels available:
-- **web_anon**: Read-only access to IoTaWatt data
-- **phisaver**: Full CRUD access to all data
+Three role levels available:
+- **anon**: Read-only access to metadata (no actual data)
+- **reader**: Read-only access to all data via API and direct DB queries
+- **writer**: Read/write access to all data via API
 
 Generate tokens with different permissions:
 ```bash
-# Read/write access (24h expiration)
-uv run generate_jwt.py generate phisaver 24
 
-# Read-only access (permanent token)
-uv run generate_jwt.py generate web_anon --no-expiry
+# Typical use (permanent writer token for IoTaWatt)
+uv run jwt.py generate --role writer iotawatt 
 ```
 
-## 🛠️ Available Commands
+##  Available Commands
 
-Use `make help` to see all available commands:
+Use `make help` to see all infrastructure commands.
+Use `uv run jwt.py --help` to see JWT generation options.
 
-```bash
-make psql_up        # Start TimescaleDB + PostgREST services
-make psql_down      # Stop services and remove volumes
-make psql_terminal  # Open PostgreSQL terminal
-make generate_jwt   # Generate JWT tokens for API access
-make show_db        # Display current IoTaWatt data
-```
 
-## 🐳 Services
+##  Services
 
 - **TimescaleDB**: Runs on port 5433 (customizable via `.env`)
 - **PostgREST API**: Runs on port 3001 (customizable via `.env`)
 - **Database**: `phisaver` with `iotawatt` hypertable for time-series data
 
-## 📁 Project Structure
+## Customization
 
-```
-├── docker-compose.yml    # Container orchestration
-├── init_db.sh           # Database initialization script
-├── generate_jwt.py      # JWT token generator utility
-├── show_db.py          # Database viewing utility  
-├── Makefile            # Development commands
-├── .env.template       # Environment configuration template
-└── pyproject.toml      # Python dependencies (uv/pip)
-```
+You can customize most names and settings via the `.env` file.
 
-## 🔧 Development
-
-This project uses [uv](https://docs.astral.sh/uv/) for fast Python package management:
+## Basic API Queries
 
 ```bash
-# Install dependencies
-uv sync
+# Get JWT token
+JWT_TOKEN="your_jwt_token_here" 
 
-# Run Python utilities
-uv run generate_jwt.py
-uv run show_db.py
+# Get latest 10 records
+curl -H "Authorization: Bearer $JWT_TOKEN" \
+     "http://localhost:3000/iotawatt?limit=10&order=timestamp.desc"
+
+# Get data for specific device
+curl -H "Authorization: Bearer $JWT_TOKEN" \
+     "http://localhost:3000/iotawatt?device=eq.iotawatt-01"
+# Get data from last 24 hours
+curl -H "Authorization: Bearer $JWT_TOKEN" \
+     "http://localhost:3000/iotawatt?timestamp=gte.$(date -d '24 hours ago' -Iseconds)"
+
+# Get aggregated hourly data
+curl -H "Authorization: Bearer $JWT_TOKEN" \
+     "http://localhost:3000/rpc/hourly_averages"
 ```
 
-## 🏢 Production Deployment
+## Data Insertion
 
-For production deployment:
-1. Use strong passwords and JWT secrets
-2. Enable SSL/TLS for API access
-3. Configure firewall rules for ports 5433/3001
-4. Set up regular database backups
-5. Use systemd for service management
-
-See [SETUP.md](SETUP.md) for detailed production deployment instructions.
-
-## 📜 License
-
-This project is part of the PhiSaver IoT monitoring ecosystem.
+```bash
+# Insert new IoTaWatt reading
+curl -X POST \
+     -H "Authorization: Bearer $JWT_TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "timestamp": "2024-01-01T12:00:00Z",
+       "device": "iotawatt-01", 
+       "sensor": "main",
+       "Watts": 1500.5,
+       "PF": 0.98,
+       "Amps": 6.25,
+       "Volts": 240.1
+     }' \
+     "http://localhost:3001/iotawatt"
+```

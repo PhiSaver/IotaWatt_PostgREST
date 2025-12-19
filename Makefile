@@ -1,59 +1,45 @@
-# Variables
 DOCKER = podman
+COMPOSE =podman-compose
+.SILENT:
+.ONESHELL:
+.PHONY: help images up down dbshell dbshell_reader logs post_python show_db jwt insert_fake veryclean
 
-help:			
-	@awk -F':|##' ' \
-		/^## / { \
-			heading=substr($$0,4); \
-			printf "\n\033[1;32m%s\033[0m\n", heading; \
-		} \
-		/^[a-zA-Z0-9_.-]+:.*##/ { \
-			sub(/^[ \t]+/, "", $$1); \
-			sub(/[ \t]+$$/, "", $$1); \
-			sub(/^[ \t]+/, "", $$3); \
-			sub(/[ \t]+$$/, "", $$3); \
-			printf "  \033[36m%-20s\033[0m %s\n", $$1, $$3; \
-		} \
-	' $(MAKEFILE_LIST)
+help: ## Show this help message
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
 
-## Docker Commands
-docker_prune: ## Prune unused Docker resources
-	$(DOCKER) system prune -f
+images: ## Build Docker images
+	$(COMPOSE) build postgrest-api
+	$(COMPOSE) build timescale
 
+up: down ## Start timescale+postgrest 
+	$(COMPOSE) up -d
 
-psql_up: ## Start timescale+postgrest 
-	$(DOCKER) compose up --build -d
+down: ## Stop PostgreSQL container 
+	$(COMPOSE) down
 
+dbshell: ## Open a terminal in the PostgreSQL container as admin
+	$(DOCKER) exec -it timescale-db psql -U ${POSTGRES_USER} -d ${POSTGRES_DB}
 
-psql_down: ## Stop PostgreSQL container and remove volumes
-	$(DOCKER) compose down -v
+dbshell_reader: ## Open a terminal in the PostgreSQL container
+	$(DOCKER) exec -it timescale-db psql -U ${PG_READER_USER} -d ${POSTGRES_DB}
 
-
-psql_terminal: ## Open a terminal in the PostgreSQL container
-	$(DOCKER) exec -it timescale-db psql -U phisaver_user -d phisaver
-
-
-
-## POSTGRESQL CLI
-post_python: ## Run Python script to post data to PostgreSQL
-	@echo "Running Python script to post data to PostgreSQL..."
-	uv run Iotawatt_python/main.py
+logs: ## View logs of all containers
+	$(DOCKER) compose logs -f
 
 show_db: ## Display IoTaWatt data from PostgreSQL database
 	@echo "Displaying IoTaWatt data from PostgreSQL database..."
 	uv run show_db.py
 
-generate_jwt: ## Generate JWT token for PostgREST API (phisaver role, 24h expiration)
-	@echo "Generating JWT token for PostgREST API..."
-	uv run generate_jwt.py generate phisaver --no-expiry
+jwt: ## Generate JWT token for PostgREST API (writer, no expiry)
+	uv run jwtutil.py generate writer --no-expiry
 
-jwt_help: ## Show JWT generator help and available commands
-	@echo "JWT Token Generator Help..."
-	uv run generate_jwt.py
 
 insert_fake: ## Insert fake IoTaWatt data for testing
 	@echo "Inserting fake IoTaWatt data..."
 	uv run Iotawatt_python/insert_fake_data.py
 
 
+veryclean: ## Remove all volumes
+	$(COMPOSE) down -v
+	

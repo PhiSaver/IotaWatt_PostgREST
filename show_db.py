@@ -3,6 +3,7 @@
 Display IoTaWatt data from PostgreSQL database via PostgREST API using JWT authentication.
 """
 
+import os
 import requests
 from rich.console import Console
 from rich.table import Table
@@ -12,15 +13,17 @@ from rich import box
 import sys
 from typing import List, Dict, Any, Optional
 from datetime import datetime
-from generate_jwt import generate_jwt_token, env_vars
+from jwtutil import generate_jwt_token
 
 # Load PostgREST configuration from .env file
-POSTGREST_PORT = env_vars.get('POSTGREST_EXTERNAL_PORT', '3001')
+POSTGREST_PORT = os.getenv('POSTGREST_EXTERNAL_PORT', '3000')
+PG_READER_USER = os.getenv('PG_READER_USER', 'reader')
+IOTAWATT_TABLE = os.getenv('IOTAWATT_TABLE', 'iotawatt_data')
 
 # PostgREST API configuration
 API_CONFIG = {
     'base_url': f'http://localhost:{POSTGREST_PORT}',
-    'default_role': 'phisaver',  # Use phisaver role for full access
+    'default_role': PG_READER_USER,
     'token_expiry_hours': 24
 }
 
@@ -63,13 +66,13 @@ def make_api_request(endpoint: str, params: Optional[Dict[str, Any]] = None, tok
 
 
 def fetch_iotawatt_data(limit: int = 100, token: str = None) -> List[Dict[str, Any]]:
-    """Fetch data from the iotawatt table via PostgREST API."""
+    f"""Fetch data from the {IOTAWATT_TABLE} via PostgREST API."""
     params = {
         'order': 'timestamp.desc',
         'limit': limit
     }
     
-    data = make_api_request('iotawatt', params, token)
+    data = make_api_request(IOTAWATT_TABLE, params, token)
     return data if data is not None else []
 
 
@@ -78,7 +81,7 @@ def get_table_stats(token: str = None) -> dict:
     try:
         # Get all data to calculate stats (for small datasets)
         # For large datasets, you'd want to use PostgREST aggregation functions
-        all_data = make_api_request('iotawatt', {'select': 'timestamp,device,sensor'}, token)
+        all_data = make_api_request(IOTAWATT_TABLE, {'select': 'timestamp,device,sensor'}, token)
         
         if not all_data:
             return {}
