@@ -1,0 +1,25 @@
+[Unit]
+Description=IoTaWatt TimescaleDB
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+ContainerName=timescale
+Image=docker.io/timescale/timescaledb:latest-pg17
+EnvironmentFile=%h/${DEPLOY_DIR}/.env
+Volume=iotawatt-pgdata:/var/lib/postgresql/data
+Volume=%h/${DEPLOY_DIR}/init_db.sh:/docker-entrypoint-initdb.d/00_init_db.sh:ro,Z
+PublishPort=127.0.0.1:${POSTGRES_EXTERNAL_PORT}:5432
+Network=iotawatt
+
+HealthCmd=pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}
+HealthInterval=500ms
+HealthTimeout=500ms
+HealthRetries=5
+HealthStartPeriod=2s
+
+[Service]
+Restart=unless-stopped
+
+[Install]
+WantedBy=default.target

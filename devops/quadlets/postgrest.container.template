@@ -1,0 +1,20 @@
+[Unit]
+Description=IoTaWatt PostgREST API
+Wants=network-online.target
+After=network-online.target
+Requires=timescale.service
+After=timescale.service
+
+[Container]
+ContainerName=postgrest
+Image=docker.io/postgrest/postgrest:latest
+EnvironmentFile=%h/${DEPLOY_DIR}/.env
+Environment=PGRST_DB_URI=postgres://${PGRST_DB_USER}:${PGRST_DB_PASSWORD}@timescale:5432/${POSTGRES_DB}
+PublishPort=127.0.0.1:${POSTGREST_EXTERNAL_PORT}:3000
+Network=iotawatt
+
+[Service]
+Restart=unless-stopped
+
+[Install]
+WantedBy=default.target

@@ -2,8 +2,6 @@
 """
 Upload sample IoTaWatt data to PostgREST API for testing purposes.
 """
-
-from encodings import hz
 import os
 import requests
 from datetime import datetime, timezone
@@ -26,8 +24,10 @@ app = typer.Typer(help="Upload sample IoTaWatt data to PostgREST")
 # Configure logging
 console_logger = logging.getLogger("console")
 console_logger.addHandler(logging.StreamHandler())  # Also log to console
+console_logger.setLevel(logging.INFO)
 file_logger = logging.getLogger('file_logger')
 file_logger.addHandler(logging.FileHandler('upload.log'))
+file_logger.setLevel(logging.DEBUG)
 
 # Validate configuration
 if not JWT_SECRET:
@@ -60,6 +60,7 @@ def generate_sample_data(num_readings: int = 5, device: str = "hfs02a") -> str:
         pf = round(watts / va, 3) if (va is not None and va != 0) else None
         
         wh = round(abs(watts) * 0.001, 3) if watts != 0 else None
+        hz = round(random.uniform(59.9, 60.1), 2) if i == 0 else None  # Only Net has Hz
         
         # Format CSV row - use 'NULL' for None values (PostgREST requires uppercase NULL)
         def fmt(val):
@@ -114,7 +115,7 @@ def generate(
         response = requests.post(url, data=csv_data, headers=headers)
         file_logger.info(f"\nREQUEST HEADERS\n{headers}")
         file_logger.info(f"\nREQUEST BODY\n({len(csv_data)} chars):\n{csv_data}")
-        file_logger.info(f"\nRESPONSE STATUS{response.status_code}")
+        file_logger.info(f"\nRESPONSE STATUS\n{response.status_code}")
         file_logger.info(f"\nRESPONSE BODY\n({len(response.text)} chars):\n{response.text}")
         
         if response.status_code in [200, 201]:

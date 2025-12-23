@@ -33,6 +33,11 @@ This project provides:
    ```bash
    uv run jwtutil.py generate writer --no-expiry > iotawatt_jwt_token.txt
    ```
+5. **Test API**:
+   ```bash
+   cat ./test.sh # View test script for API usage
+   ./test.sh  
+   ```
 
 
 ##  Authentication
@@ -43,35 +48,19 @@ Two role levels available:
 
 Generate tokens with different permissions via `uv run jwtutil.py generate reader # or writer`.
 
-## Basic API
+## Deployment
 
-```bash
-# Get JWT token
-export JWT_TOKEN_READER=$(uv run jwtutil.py generate reader)
-export JWT_TOKEN_WRITER=$(uv run jwtutil.py generate writer)
-export PGRST=http://localhost:$POSTGREST_EXTERNAL_PORT
+There are two deployment options:
 
-# Put some data
-http POST $PGRST/iotawatt \
-     Authorization:"Bearer $JWT_TOKEN_WRITER" \
-     "Content-Type":"application/json" \
-       timestamp=$(date +"%Y-%m-%dT%H:%M:%S%z") \
-       device=iotawatt-01 \
-       sensor=main \
-       Watts=1500.5 \
-       PF=0.98 \
-       Amps=6.25 \
-       Volts=240.1
-     
-# Get latest 10 records
-http GET "$PGRST/iotawatt?limit=10&order=timestamp.desc" \
-     Authorization:"Bearer $JWT_TOKEN_READER"
+### Docker/Podman Compose
 
-# Get data for specific device
-http GET      "$PGRST/iotawatt?device=eq.iotawatt-01" \
-     Authorization:"Bearer $JWT_TOKEN_READER"
+Runs a podman or docker compose setup locally. Based on the `compose.yml`. Good for development and testing.
+Use the following commands:
+` make up` to start, `make down` to stop.
 
-# Get data from last 24 hours
-http GET "$PGRST/iotawatt?timestamp=gte.$(date -d '24 hours ago' +"%Y-%m-%dT%H:%M:%S")" \
-     Authorization:"Bearer $JWT_TOKEN_READER"
-```
+### Systemd Quadlets 
+
+Deploys the services as systemd user services using Podman and Quadlets. Suitable for production use. Check .env for configuration.
+Use the following commands:
+`make deploy-local` to deploy on the local machine.
+`make deploy-remote` to deploy to a remote host via SSH.
