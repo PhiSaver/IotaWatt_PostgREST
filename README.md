@@ -5,9 +5,10 @@ Works with IoTaWatt energy monitoring, adding uploading to PostgresSQL / Timesca
 ## Architecture
 
 This project provides:
-- **TimescaleDB Container**: Time-series database for IoTaWatt data
-- **PostgREST Container**: Automatic REST API generation from PostgreSQL schema
-- **JWT Utilities**: Secure API access with role-based permissions
+- **TimescaleDB Container**: Time-series database for IoTaWatt data. Default port **5432**.
+- **PostgREST Container**: REST API generation from PostgreSQL schema. Default port **3000**.
+- **JWT Utilities**: Secure API access with role-based permissions. `uv run jwtutil.py`
+
 
 ## Quick Start
 
@@ -28,22 +29,11 @@ This project provides:
    make up
    ```
 
-4. **Generate JWT token**:
+4. **Typical use (permanent writer token for IoTaWatt)**:
    ```bash
-   make jwt
-   export JWT_TOKEN=your_generated_token_here
+   uv run jwtutil.py generate writer --no-expiry > iotawatt_jwt_token.txt
    ```
 
-##  API Access
-
-Once running, your IoTaWatt data is available via REST API:
-
-```bash
-
-# Get data for specific device
-curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-     "http://localhost:3001/iotawatt?device=eq.iotawatt-01&limit=50"
-```
 
 ##  Authentication
 
@@ -51,65 +41,37 @@ Two role levels available:
 - **reader**: Read-only access to all data via API and direct DB queries
 - **writer**: Read/write access to all data via API
 
-Generate tokens with different permissions:
-```bash
+Generate tokens with different permissions via `uv run jwtutil.py generate reader # or writer`.
 
-# Typical use (permanent writer token for IoTaWatt)
-uv run jwt.py generate --role writer iotawatt 
-```
-
-##  Available Commands
-
-Use `make help` to see all infrastructure commands.
-Use `uv run jwt.py --help` to see JWT generation options.
-
-
-##  Services
-
-- **TimescaleDB**: Runs on port 5433 (customizable via `.env`)
-- **PostgREST API**: Runs on port 3001 (customizable via `.env`)
-
-## Customization
-
-You can customize most names and settings via the `.env` file.
-
-## Basic API Queries
+## Basic API
 
 ```bash
 # Get JWT token
-JWT_TOKEN="your_jwt_token_here" 
+export JWT_TOKEN_READER=$(uv run jwtutil.py generate reader)
+export JWT_TOKEN_WRITER=$(uv run jwtutil.py generate writer)
+export PGRST=http://localhost:$POSTGREST_EXTERNAL_PORT
 
+# Put some data
+http POST $PGRST/iotawatt \
+     Authorization:"Bearer $JWT_TOKEN_WRITER" \
+     "Content-Type":"application/json" \
+       timestamp=$(date +"%Y-%m-%dT%H:%M:%S%z") \
+       device=iotawatt-01 \
+       sensor=main \
+       Watts=1500.5 \
+       PF=0.98 \
+       Amps=6.25 \
+       Volts=240.1
+     
 # Get latest 10 records
-curl -H "Authorization: Bearer $JWT_TOKEN" \
-     "http://localhost:3000/iotawatt?limit=10&order=timestamp.desc"
+http GET "$PGRST/iotawatt?limit=10&order=timestamp.desc" \
+     Authorization:"Bearer $JWT_TOKEN_READER"
 
 # Get data for specific device
-curl -H "Authorization: Bearer $JWT_TOKEN" \
-     "http://localhost:3000/iotawatt?device=eq.iotawatt-01"
+http GET      "$PGRST/iotawatt?device=eq.iotawatt-01" \
+     Authorization:"Bearer $JWT_TOKEN_READER"
+
 # Get data from last 24 hours
-curl -H "Authorization: Bearer $JWT_TOKEN" \
-     "http://localhost:3000/iotawatt?timestamp=gte.$(date -d '24 hours ago' -Iseconds)"
-
-# Get aggregated hourly data
-curl -H "Authorization: Bearer $JWT_TOKEN" \
-     "http://localhost:3000/rpc/hourly_averages"
-```
-
-## Data Insertion
-
-```bash
-# Insert new IoTaWatt reading
-curl -X POST \
-     -H "Authorization: Bearer $JWT_TOKEN" \
-     -H "Content-Type: application/json" \
-     -d '{
-       "timestamp": "2024-01-01T12:00:00Z",
-       "device": "iotawatt-01", 
-       "sensor": "main",
-       "Watts": 1500.5,
-       "PF": 0.98,
-       "Amps": 6.25,
-       "Volts": 240.1
-     }' \
-     "http://localhost:3001/iotawatt"
+http GET "$PGRST/iotawatt?timestamp=gte.$(date -d '24 hours ago' +"%Y-%m-%dT%H:%M:%S")" \
+     Authorization:"Bearer $JWT_TOKEN_READER"
 ```
